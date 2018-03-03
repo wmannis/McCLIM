@@ -162,6 +162,44 @@
           (format stream "~A bytes" object)
         (format stream "~,1F~A" (/ object (expt 1000 idx)) (nth idx suffixes))))))
 
+;;; In a textual-view lists and vectors are presented as
+;;; comma-separated items, rather than in a lisp-readable format.  For
+;;; the Listener it makes better sense for these to look like lisp
+;;; forms when they appear in menus.
+(define-presentation-method present ((object list) (type sequence)
+                                     stream
+                                     (view textual-menu-view)
+                                     &key acceptably for-context-type)
+  (declare (ignore for-context-type))
+  (write-char #\( stream)
+  (loop for tail on object
+        for (obj) = tail
+        do (progn
+             (present obj type          ; i.e., the type parameter
+                        :stream stream :view view
+                        :acceptably acceptably
+                        :sensitive nil)
+             (when (cdr tail)
+               (write-char #\Space stream))))
+  (write-char #\) stream))
+
+(define-presentation-method present ((object vector) (type sequence)
+                                     stream
+                                     (view textual-menu-view)
+                                     &key acceptably for-context-type)
+  (declare (ignore for-context-type))
+  (write-string "#(" stream)
+  (loop for i from 0 below (length object)
+        for obj = (aref object i)
+        do (progn
+             (present obj type          ; i.e., the type parameter
+                        :stream stream :view view
+                        :acceptably acceptably
+                        :sensitive nil)
+             (when (< i (1- (length object)))
+               (write-char #\Space stream))))
+  (write-char #\) stream))
+
 ;;; Presentation translators
 
 (define-presentation-translator class-name-to-class
